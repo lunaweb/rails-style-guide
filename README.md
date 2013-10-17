@@ -520,6 +520,13 @@ NOTE: Find a gem to automate that.
   send. To overcome this emails can be send in background process with the help
   of [sidekiq](https://github.com/mperham/sidekiq) gem.
 
+## `lib` directory
+
+* See [How to declutter your lib directory](http://blog.lunarlogic.io/2013/declutter-lib-directory/)
+  for a good hint on how to keep an application clean and organized, with some notable differences :
+  * Resque workers goes to `app/workers` instead of `app/queues`
+  * Monkey patches goes to `lib/{name of the patched gem}/{patch|purpose of the patch}.rb`
+
 ## Bundler
 
 * Put gems used only for development or testing in the appropriate group in the Gemfile.
