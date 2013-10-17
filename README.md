@@ -1,37 +1,3 @@
-# Prelude
-
-> Role models are important. <br/>
-> -- Officer Alex J. Murphy / RoboCop
-
-The goal of this guide is to present a set of best practices and style
-prescriptions for Ruby on Rails 3 & 4 development. It's a complementary
-guide to the already existing community-driven
-[Ruby coding style guide](https://github.com/bbatsov/ruby-style-guide).
-
-While in the guide the section [Testing Rails applications](#testing-rails-applications)
-is after [Developing Rails applications](#developing-rails-applications) I truly believe
-that
-[Behaviour-Driven Development](http://en.wikipedia.org/wiki/Behavior_Driven_Development)
-(BDD) is the best way to develop software. Keep that in mind.
-
-Rails is an opinionated framework and this is an opinionated guide. In
-my mind I'm totally certain that
-[RSpec](https://www.relishapp.com/rspec) is superior to Test::Unit,
-[Sass](http://sass-lang.com/) is superior to CSS and
-[Haml](http://haml-lang.com/) ([Slim](http://slim-lang.com/)) is
-superior to Erb. So don't expect to find any Test::Unit, CSS or Erb
-advice in here.
-
-Some of the advice here is applicable only to Rails 3.1+.
-
-You can generate a PDF or an HTML copy of this guide using
-[Transmuter](https://github.com/TechnoGate/transmuter).
-
-Translations of the guide are available in the following languages:
-
-* [Chinese Simplified](https://github.com/JuanitoFatas/rails-style-guide/blob/master/README-zhCN.md)
-* [Chinese Traditional](https://github.com/JuanitoFatas/rails-style-guide/blob/master/README-zhTW.md)
-
 # Table of Contents
 
 * [Developing Rails applications](#developing-rails-applications)
@@ -45,8 +11,6 @@ Translations of the guide are available in the following languages:
     * [Assets](#assets)
     * [Mailers](#mailers)
     * [Bundler](#bundler)
-    * [Priceless Gems](#priceless-gems)
-    * [Flawed Gems](#flawed-gems)
     * [Managing processes](#managing-processes)
 * [Testing Rails applications](#testing-rails-applications)
     * [Cucumber](#cucumber)
@@ -65,7 +29,7 @@ Translations of the guide are available in the following languages:
   environment (in the corresponding files under `config/environments/`)
   * Mark additional assets for precompilation (if any):
 
-        ```Ruby
+        ```
         # config/environments/production.rb
         # Precompile additional assets (application.js, application.css, and all non-JS/CSS are already added)
         config.assets.precompile += %w( rails_admin/rails_admin.css rails_admin/rails_admin.js )
@@ -80,7 +44,7 @@ the `production` one.
 * When you need to add more actions to a RESTful resource (do you
   really need them at all?) use `member` and `collection` routes.
 
-    ```Ruby
+    ```
     # bad
     get 'subscriptions/:id/unsubscribe'
     resources :subscriptions
@@ -103,7 +67,7 @@ the `production` one.
 * If you need to define multiple `member/collection` routes use the
   alternative block syntax.
 
-    ```Ruby
+    ```
     resources :subscriptions do
       member do
         get 'unsubscribe'
@@ -122,7 +86,7 @@ the `production` one.
 * Use nested routes to express better the relationship between
   ActiveRecord models.
 
-    ```Ruby
+    ```
     class Post < ActiveRecord::Base
       has_many :comments
     end
@@ -139,7 +103,7 @@ the `production` one.
 
 * Use namespaced routes to group related actions.
 
-    ```Ruby
+    ```
     namespace :admin do
       # Directs /admin/products/* to Admin::ProductsController
       # (app/controllers/admin/products_controller.rb)
@@ -150,7 +114,7 @@ the `production` one.
 * Never use the legacy wild controller route. This route will make all
   actions in every controller accessible via GET requests.
 
-    ```Ruby
+    ```
     # very bad
     match ':controller(/:action(/:id(.:format)))'
     ```
@@ -164,7 +128,6 @@ the `production` one.
   business logic should naturally reside in the model).
 * Each controller action should (ideally) invoke only one method other
   than an initial find or new.
-* Share no more than two instance variables between a controller and a view.
 
 ## Models
 
@@ -175,7 +138,7 @@ abbreviations.
   validation) use the
   [ActiveAttr](https://github.com/cgriego/active_attr) gem.
 
-    ```Ruby
+    ```
     class Message
       include ActiveAttr::Model
 
@@ -201,7 +164,7 @@ abbreviations.
   unless you have a very good reason (like a database that's not under
   your control).
 
-    ```Ruby
+    ```
     # bad - don't do this if you can modify the schema
     class Transaction < ActiveRecord::Base
       self.table_name = 'order'
@@ -212,7 +175,7 @@ abbreviations.
 * Group macro-style methods (`has_many`, `validates`, etc) in the
   beginning of the class definition.
 
-    ```Ruby
+    ```
     class User < ActiveRecord::Base
       # keep the default scope first (if any)
       default_scope { where(active: true) }
@@ -247,39 +210,9 @@ abbreviations.
     end
     ```
 
-* Prefer `has_many :through` to `has_and_belongs_to_many`. Using `has_many
-:through` allows additional attributes and validations on the join model.
+* Prefer `self[:attribute]` over `read_attribute(:attribute)`. Prefer renaming method anyway.
 
-    ```Ruby
-    # using has_and_belongs_to_many
-    class User < ActiveRecord::Base
-      has_and_belongs_to_many :groups
-    end
-
-    class Group < ActiveRecord::Base
-      has_and_belongs_to_many :users
-    end
-
-    # prefered way - using has_many :through
-    class User < ActiveRecord::Base
-      has_many :memberships
-      has_many :groups, through: :memberships
-    end
-
-    class Membership < ActiveRecord::Base
-      belongs_to :user
-      belongs_to :group
-    end
-
-    class Group < ActiveRecord::Base
-      has_many :memberships
-      has_many :users, through: :memberships
-    end
     ```
-
-* Prefer `self[:attribute]` over `read_attribute(:attribute)`.
-
-    ```Ruby
     # bad
     def amount
       read_attribute(:amount) * 100
@@ -294,7 +227,7 @@ abbreviations.
 * Always use the new
   ["sexy" validations](http://thelucid.com/2010/01/08/sexy-validation-in-edge-rails-rails-3/).
 
-    ```Ruby
+    ```
     # bad
     validates_presence_of :email
 
@@ -305,7 +238,7 @@ abbreviations.
 * When a custom validation is used more than once or the validation is
 some regular expression mapping, create a custom validator file.
 
-    ```Ruby
+    ```
     # bad
     class Person
       validates :email, format: { with: /\A([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})\z/i }
@@ -327,47 +260,16 @@ some regular expression mapping, create a custom validator file.
 * Consider extracting custom validators to a shared gem if you're
   maintaining several related apps or the validators are generic
   enough.
-* Use named scopes freely.
+* Use class methods for scopes
 
-    ```Ruby
-    class User < ActiveRecord::Base
-      scope :active, -> { where(active: true) }
-      scope :inactive, -> { where(active: false) }
-
-      scope :with_orders, -> { joins(:orders).select('distinct(users.id)') }
-    end
     ```
-
-* Wrap named scopes in `lambdas` to initialize them lazily (this is only a prescription in Rails 3, but is mandatory in Rails 4).
-
-    ```Ruby
-    # bad
     class User < ActiveRecord::Base
-      scope :active, where(active: true)
-      scope :inactive, where(active: false)
-
-      scope :with_orders, joins(:orders).select('distinct(users.id)')
-    end
-
-    # good
-    class User < ActiveRecord::Base
-      scope :active, -> { where(active: true) }
-      scope :inactive, -> { where(active: false) }
-
-      scope :with_orders, -> { joins(:orders).select('distinct(users.id)') }
-    end
-    ```
-
-* When a named scope defined with a lambda and parameters becomes too
-complicated, it is preferable to make a class method instead which serves
-the same purpose of the named scope and returns an
-`ActiveRecord::Relation` object. Arguably you can define even simpler
-scopes like this.
-
-    ```Ruby
-    class User < ActiveRecord::Base
-      def self.with_orders
-        joins(:orders).select('distinct(users.id)')
+      
+      # Scopes
+      class << self
+        def with_orders
+          joins(:orders).select('distinct(users.id)')
+        end
       end
     end
     ```
@@ -380,7 +282,7 @@ There is more than one way to achieve this:
     The default implementation returns the `id` of the record as a String. It could be overridden to include another
     human-readable attribute.
 
-        ```Ruby
+        ```
         class Person
           def to_param
             "#{id} #{name}".parameterize
@@ -390,28 +292,17 @@ There is more than one way to achieve this:
 
     In order to convert this to a URL-friendly value, `parameterize` should be called on the string. The `id` of the
     object needs to be at the beginning so that it can be found by the `find` method of ActiveRecord.
-
-  * Use the `friendly_id` gem. It allows creation of human-readable URLs by using some descriptive attribute of the model instead of its `id`.
-
-        ```Ruby
-        class Person
-          extend FriendlyId
-          friendly_id :name, use: :slugged
-        end
-        ```
-
-        Check the [gem documentation](https://github.com/norman/friendly_id) for more information about its usage.
+    
+    NOTE: Find asolution to keep backends url simples
 
 ## Migrations
 
 * Keep the `schema.rb` (or `structure.sql`) under version control.
-* Use `rake db:schema:load` instead of `rake db:migrate` to initialize
-an empty database.
+* Use `rake db:schema:load` instead of `rake db:migrate` to initialize an empty database.
 * Use `rake db:test:prepare` to update the schema of the test database.
-* Enforce default values in the migrations themselves instead of in
-  the application layer.
+* Enforce default values in the migrations themselves instead of in the application layer.
 
-    ```Ruby
+    ```
     # bad - application enforced default value
     def amount
       self[:amount] or 0
@@ -429,12 +320,14 @@ an empty database.
 them natively, there some great third-party gems like
 [schema_plus](https://github.com/lomba/schema_plus) and [foreigner](https://github.com/matthuhiggins/foreigner).
 
+NOTE: Test both gems before taking any decision.
+
 * When writing constructive migrations (adding tables or columns), use
   the new Rails 3.1 way of doing the migrations - use the `change`
   method instead of `up` and `down` methods.
 
 
-    ```Ruby
+    ```
     # the old way
     class AddNameToPerson < ActiveRecord::Migration
       def up
@@ -494,15 +387,13 @@ the texts used in the views in folder `views`.
   directories, these directories must be described in the `application.rb`
   file in order to be loaded.
 
-        ```Ruby
+        ```
         # config/application.rb
         config.i18n.load_path += Dir[Rails.root.join('config', 'locales', '**', '*.{rb,yml}')]
         ```
 
 * Place the shared localization options, such as date or currency formats, in
-files
-under
-the root of the `locales` directory.
+files under the root of the `locales` directory.
 * Use the short form of the I18n methods: `I18n.t` instead of `I18n.translate`
 and `I18n.l` instead of `I18n.localize`.
 * Use "lazy" lookup for the texts used in views. Let's say we have the
@@ -518,7 +409,7 @@ following structure:
     The value for `users.show.title` can be looked up in the template
     `app/views/users/show.html.haml` like this:
 
-    ```Ruby
+    ```
     = t '.title'
     ```
 
@@ -526,7 +417,7 @@ following structure:
 specifying the `:scope` option. The dot-separated call is easier to read and
 trace the hierarchy.
 
-    ```Ruby
+    ```
     # use this call
     I18n.t 'activerecord.errors.messages.record_invalid'
 
@@ -534,9 +425,7 @@ trace the hierarchy.
     I18n.t :record_invalid, :scope => [:activerecord, :errors, :messages]
     ```
 
-* More detailed information about the Rails i18n can be found in the [Rails
-Guides]
-(http://guides.rubyonrails.org/i18n.html)
+* More detailed information about the Rails i18n can be found in the [Rails Guides](http://guides.rubyonrails.org/i18n.html)
 
 ## Assets
 
@@ -555,29 +444,22 @@ your application.
   isn't immediately apparent what's a mailer and which views are
   related to the mailer.
 * Provide both HTML and plain-text view templates.
+
+NOTE: Find a gem to automate that.
+
 * Enable errors raised on failed mail delivery in your development environment. The errors are disabled by default.
 
-    ```Ruby
+    ```
     # config/environments/development.rb
 
     config.action_mailer.raise_delivery_errors = true
     ```
 
-* Use `smtp.gmail.com` for SMTP server in the development environment
-  (unless you have local SMTP server, of course).
-
-    ```Ruby
-    # config/environments/development.rb
-
-    config.action_mailer.smtp_settings = {
-      address: 'smtp.gmail.com',
-      # more settings
-    }
-    ```
+* Use [Mailcatcher](http://rubygems.org/gems/mailcatcher) for SMTP server in the development environment.
 
 * Provide default settings for the host name.
 
-    ```Ruby
+    ```
     # config/environments/development.rb
     config.action_mailer.default_url_options = {host: "#{local_ip}:3000"}
 
@@ -593,7 +475,7 @@ your application.
   `_url`, not `_path` methods. The `_url` methods include the host
   name and the `_path` methods don't.
 
-    ```Ruby
+    ```
     # wrong
     You can always find more info about this course
     = link_to 'here', url_for(course_path(@course))
@@ -605,14 +487,14 @@ your application.
 
 * Format the from and to addresses properly. Use the following format:
 
-    ```Ruby
+    ```
     # in your mailer class
     default from: 'Your Name <info@your_site.com>'
     ```
 
 * Make sure that the e-mail delivery method for your test environment is set to `test`:
 
-    ```Ruby
+    ```
     # config/environments/test.rb
 
     config.action_mailer.delivery_method = :test
@@ -620,7 +502,7 @@ your application.
 
 * The delivery method for development and production should be `smtp`:
 
-    ```Ruby
+    ```
     # config/environments/development.rb, config/environments/production.rb
 
     config.action_mailer.delivery_method = :smtp
@@ -649,7 +531,7 @@ for projects with multiple developers using different operating systems.
 Add all OS X specific gems to a `darwin` group in the Gemfile, and all Linux
 specific gems to a `linux` group:
 
-    ```Ruby
+    ```
     # Gemfile
     group :darwin do
       gem 'rb-fsevent'
@@ -664,7 +546,7 @@ specific gems to a `linux` group:
     To require the appropriate gems in the right environment, add the
     following to `config/application.rb`:
 
-    ```Ruby
+    ```
     platform = RUBY_PLATFORM.match(/(linux|darwin)/)[0].to_sym
     Bundler.require(platform)
     ```
@@ -673,131 +555,14 @@ specific gems to a `linux` group:
   some randomly generated file - it makes sure that all of your team
   members get the same gem versions when they do a `bundle install`.
 
-## Priceless Gems
-
-One of the most important programming principles is "Don't reinvent
-the wheel!". If you're faced with a certain task you should always
-look around a bit for existing solutions, before rolling your
-own. Here's a list of some "priceless" gems (all of them Rails 3.1
-compliant) that are useful in many Rails projects:
-
-* [active_admin](https://github.com/gregbell/active_admin) - With ActiveAdmin
-  the creation of admin interface for your Rails app is child's play. You get a
-  nice dashboard, CRUD UI and lots more. Very flexible and customizable.
-* [better_errors](https://github.com/charliesome/better_errors) - Better Errors replaces
-  the standard Rails error page with a much better and more useful error page. It is also
-  usable outside of Rails in any Rack app as Rack middleware.
-* [bullet](https://github.com/flyerhzm/bullet) - The Bullet gem is designed to
-  help you increase your application’s performance by reducing the number of
-  queries it makes. It will watch your queries while you develop your
-  application and notify you when you should add eager loading (N+1 queries),
-  when you’re using eager loading that isn’t necessary and when you should use
-  counter cache.
-* [cancan](https://github.com/ryanb/cancan) - CanCan is an authorization gem that
-  lets you restrict users access to resources. All permissions are defined in a
-  single file (ability.rb) and convenient methods for checking and ensuring
-  permissions are available throughout the application.
-* [capybara](https://github.com/jnicklas/capybara) - Capybara aims to simplify
-  the process of integration testing Rack applications, such as Rails, Sinatra
-  or Merb. Capybara simulates how a real user would interact with a web
-  application. It is agnostic about the driver running your tests and currently
-  comes with Rack::Test and Selenium support built in. HtmlUnit, WebKit and
-  env.js are supported through external gems. Works great in combination with
-  RSpec & Cucumber.
-* [carrierwave](https://github.com/jnicklas/carrierwave) - the ultimate file
-  upload solution for Rails. Support both local and cloud storage for the
-  uploaded files (and many other cool things). Integrates great with
-  ImageMagick for image post-processing.
-* [compass-rails](https://github.com/chriseppstein/compass) - Great gem that
-  adds support for some css frameworks. Includes collection of sass mixins that
-  reduces code of css files and help fight with browser incompatibilities.
-* [cucumber-rails](https://github.com/cucumber/cucumber-rails) - Cucumber is
-  the premium tool to develop feature tests in Ruby. cucumber-rails provides
-  Rails integration for Cucumber.
-* [devise](https://github.com/plataformatec/devise) - Devise is full-featured
-  authentication solution for Rails applications. In most cases it's preferable
-  to use devise to unrolling your custom authentication solution.
-* [fabrication](http://fabricationgem.org/) - a great fixture replacement
-  (editor's choice).
-* [factory_girl](https://github.com/thoughtbot/factory_girl) - an alternative
-  to fabrication. Nice and mature fixture replacement. Spiritual ancestor of
-  fabrication.
-* [ffaker](https://github.com/EmmanuelOga/ffaker) - handy gem to generate dummy data
-  (names, addresses, etc).
-* [feedzirra](https://github.com/pauldix/feedzirra) - Very fast and flexible
-  RSS/Atom feed parser.
-* [friendly_id](https://github.com/norman/friendly_id) - Allows creation of
-  human-readable URLs by using some descriptive attribute of the model instead
-  of its id.
-* [globalize3](https://github.com/svenfuchs/globalize3.git) - Globalize3 is
-  the successor of Globalize for Rails and is targeted at ActiveRecord
-  version 3.x. It is compatible with and builds on the new I18n API in Ruby
-  on Rails and adds model translations to ActiveRecord.
-* [guard](https://github.com/guard/guard) - fantastic gem that monitors file
-  changes and invokes tasks based on them. Loaded with lots of useful
-  extension. Far superior to autotest and watchr.
-* [haml-rails](https://github.com/indirect/haml-rails) - haml-rails provides
-  Rails integration for Haml.
-* [haml](http://haml-lang.com) - HAML is a concise templating language,
-  considered by many (including yours truly) to be far superior to Erb.
-* [kaminari](https://github.com/amatsuda/kaminari) - Great paginating solution.
-* [machinist](https://github.com/notahat/machinist) - Fixtures aren't fun.
-  Machinist is.
-* [rspec-rails](https://github.com/rspec/rspec-rails) - RSpec is a replacement
-  for Test::MiniTest. I cannot recommend highly enough RSpec. rspec-rails
-  provides Rails integration for RSpec.
-* [sidekiq](https://github.com/mperham/sidekiq) - Sidekiq is probably
-  the easiest and most scalable way to run background jobs in your
-  Rails app.
-* [simple_form](https://github.com/plataformatec/simple_form) - once you've
-  used simple_form (or formtastic) you'll never want to hear about Rails's
-  default forms. It has a great DSL for building forms and no opinion on
-  markup.
-* [simplecov-rcov](https://github.com/fguillen/simplecov-rcov) - RCov formatter
-  for SimpleCov. Useful if you're trying to use SimpleCov with the Hudson
-  contininous integration server.
-* [simplecov](https://github.com/colszowka/simplecov) - code coverage tool.
-  Unlike RCov it's fully compatible with Ruby 1.9. Generates great reports.
-  Must have!
-* [slim](http://slim-lang.com) - Slim is a concise templating language,
-  considered by many far superior to HAML (not to mention Erb). The only thing
-  stopping me from using Slim massively is the lack of good support in major
-  editors/IDEs. Its performance is phenomenal.
-* [spork](https://github.com/sporkrb/spork) - A DRb server for testing
-  frameworks (RSpec / Cucumber currently) that forks before each run to ensure
-  a clean testing state. Simply put it preloads a lot of test environment and
-  as consequence the startup time of your tests in greatly decreased. Absolute
-  must have!
-* [sunspot](https://github.com/sunspot/sunspot) - SOLR powered full-text search
-  engine.
-
-This list is not exhaustive and other gems might be added to it along
-the road. All of the gems on the list are field tested, have active
-development and community and are known to be of good code quality.
-
-## Flawed Gems
-
-This is a list of gems that are either problematic or superseded by
-other gems. You should avoid using them in your projects.
-
-* [rmagick](http://rmagick.rubyforge.org/) - this gem is notorious for its memory consumption. Use
-[minimagick](https://github.com/probablycorey/mini_magick) instead.
-* [autotest](http://www.zenspider.com/ZSS/Products/ZenTest/) - old solution for running tests automatically. Far
-inferior to [guard](https://github.com/guard/guard) and [watchr](https://github.com/mynyml/watchr).
-* [rcov](https://github.com/relevance/rcov) - code coverage tool, not
-  compatible with Ruby 1.9. Use
-  [SimpleCov](https://github.com/colszowka/simplecov) instead.
-* [therubyracer](https://github.com/cowboyd/therubyracer) - the use of
-  this gem in production is strongly discouraged as it uses a very large amount of
-  memory. I'd suggest using `node.js` instead.
-
-This list is also a work in progress. Please, let me know if you know
-other popular, but flawed gems.
-
 ## Managing processes
 
 * If your projects depends on various external processes use
   [foreman](https://github.com/ddollar/foreman) to manage them.
+
+---
+# This part has not been reviewed
+---
 
 # Testing Rails applications
 
@@ -824,7 +589,7 @@ is recommended to increase the regular scenarios execution speed.
 * Setup a separate profile for the scenarios marked with `@javascript` tag.
   * The profiles can be configured in the `cucumber.yml` file.
 
-        ```Ruby
+        ```
         # definition of a profile:
         profile_name: --tags @tag_name
         ```
@@ -847,7 +612,7 @@ reflect the application domain.
   can detect problems with the i18n.
 * Create separate features for different functionality regarding the same kind of objects:
 
-    ```Ruby
+    ```
     # bad
     Feature: Articles
     # ... feature  implementation ...
@@ -870,7 +635,7 @@ reflect the application domain.
   * Acceptance criteria - the set of scenarios each made up of individual steps.
 * The most common format is known as the Connextra format.
 
-    ```Ruby
+    ```
     In order to [benefit] ...
     A [stakeholder]...
     Wants to [feature] ...
@@ -881,7 +646,7 @@ be free text depending on the complexity of the feature.
 
 * Use Scenario Outlines freely to keep the scenarios DRY.
 
-    ```Ruby
+    ```
     Scenario Outline: User cannot register with invalid e-mail
       When I try to register with an email "<email>"
       Then I should see the error message "<error>"
@@ -901,7 +666,7 @@ can be one steps file for all features for a particular object
 (`articles_steps.rb`).
 * Use multiline step arguments to avoid repetition
 
-    ```Ruby
+    ```
     Scenario: User profile
       Given I am logged in as a user "John Doe" with an e-mail "user@test.com"
       When I go to my profile
@@ -922,7 +687,7 @@ can be one steps file for all features for a particular object
 
 * Use just one expectation per example.
 
-    ```Ruby
+    ```
     # bad
     describe ArticlesController do
       #...
@@ -963,7 +728,7 @@ can be one steps file for all features for a particular object
   * use pound "#method" for instance methods
   * use dot ".method" for class methods
 
-    ```Ruby
+    ```
     class Article
       def summary
         #...
@@ -990,7 +755,7 @@ can be one steps file for all features for a particular object
   objects.
 * Make heavy use of mocks and stubs
 
-    ```Ruby
+    ```
     # mocking a model
     article = mock_model(Article)
 
@@ -1002,14 +767,14 @@ can be one steps file for all features for a particular object
   output to listen only for messages we expect and ignore any other
   messages.
 
-    ```Ruby
+    ```
     article = mock_model(Article).as_null_object
     ```
 
 * Use `let` blocks instead of `before(:each)` blocks to create data for
   the spec examples. `let` blocks get lazily evaluated.
 
-    ```Ruby
+    ```
     # use this:
     let(:article) { Fabricate(:article) }
 
@@ -1019,7 +784,7 @@ can be one steps file for all features for a particular object
 
 * Use `subject` when possible
 
-    ```Ruby
+    ```
     describe Article do
       subject { Fabricate(:article) }
 
@@ -1031,7 +796,7 @@ can be one steps file for all features for a particular object
 
 * Use `specify` if possible. It is a synonym of `it` but is more readable when there is no docstring.
 
-    ```Ruby
+    ```
     # bad
     describe Article do
       before { @article = Fabricate(:article) }
@@ -1051,7 +816,7 @@ can be one steps file for all features for a particular object
 
 * Use `its` when possible
 
-    ```Ruby
+    ```
     # bad
     describe Article do
       subject { Fabricate(:article) }
@@ -1071,7 +836,7 @@ can be one steps file for all features for a particular object
 
 * Use `shared_examples` if you want to create a spec group that can be shared by many other tests.
 
-   ```Ruby
+   ```
    # bad
     describe Array do
       subject { Array.new [7, 2, 4] }
@@ -1119,7 +884,7 @@ can be one steps file for all features for a particular object
   `app/views` part. This is used by the `render` method when it is
   called without arguments.
 
-    ```Ruby
+    ```
     # spec/views/articles/new.html.haml_spec.rb
     require 'spec_helper'
 
@@ -1133,7 +898,7 @@ can be one steps file for all features for a particular object
 * The method `assign` supplies the instance variables which the view
   uses and are supplied by the controller.
 
-    ```Ruby
+    ```
     # spec/views/articles/edit.html.haml_spec.rb
     describe 'articles/edit.html.haml' do
     it 'renders the form for a new article creation' do
@@ -1153,7 +918,7 @@ can be one steps file for all features for a particular object
 
 * Prefer the capybara negative selectors over should_not with the positive.
 
-    ```Ruby
+    ```
     # bad
     page.should_not have_selector('input', type: 'submit')
     page.should_not have_xpath('tr')
@@ -1167,7 +932,7 @@ can be one steps file for all features for a particular object
   stubbed. Stubbing the helper methods is done on the `template`
   object:
 
-    ```Ruby
+    ```
     # app/helpers/articles_helper.rb
     class ArticlesHelper
       def formatted_date(date)
@@ -1202,7 +967,7 @@ can be one steps file for all features for a particular object
   * Data returned from the action - assigns, etc.
   * Result from the action - template render, redirect, etc.
 
-        ```Ruby
+        ```
         # Example of a commonly used controller spec
         # spec/controllers/articles_controller_spec.rb
         # We are interested only in the actions the controller should perform
@@ -1237,7 +1002,7 @@ can be one steps file for all features for a particular object
 
 * Use context when the controller action has different behaviour depending on the received params.
 
-    ```Ruby
+    ```
     # A classic example for use of contexts in a controller spec is creation or update when the object saves successfully or not.
 
     describe ArticlesController do
@@ -1294,7 +1059,7 @@ can be one steps file for all features for a particular object
 * It is acceptable to mock other models or child objects.
 * Create the model for all examples in the spec to avoid duplication.
 
-    ```Ruby
+    ```
     describe Article do
       let(:article) { Fabricate(:article) }
     end
@@ -1302,7 +1067,7 @@ can be one steps file for all features for a particular object
 
 * Add an example ensuring that the fabricated model is valid.
 
-    ```Ruby
+    ```
     describe Article do
       it 'is valid with valid attributes' do
         article.should be_valid
@@ -1314,7 +1079,7 @@ can be one steps file for all features for a particular object
 which should be validated. Using `be_valid` does not guarantee that the problem
  is in the intended attribute.
 
-    ```Ruby
+    ```
     # bad
     describe '#title' do
       it 'is required' do
@@ -1334,7 +1099,7 @@ which should be validated. Using `be_valid` does not guarantee that the problem
 
 * Add a separate `describe` for each attribute which has validations.
 
-    ```Ruby
+    ```
     describe Article do
       describe '#title' do
         it 'is required' do
@@ -1347,7 +1112,7 @@ which should be validated. Using `be_valid` does not guarantee that the problem
 
 * When testing uniqueness of a model attribute, name the other object `another_object`.
 
-    ```Ruby
+    ```
     describe Article do
       describe '#title' do
         it 'is unique' do
@@ -1367,7 +1132,7 @@ which should be validated. Using `be_valid` does not guarantee that the problem
   * the e-mail is sent to the right e-mail address
   * the e-mail contains the required information
 
-    ```Ruby
+    ```
     describe SubscriberMailer do
       let(:subscriber) { mock_model(Subscription, email: 'johndoe@test.com', name: 'John Doe') }
 
@@ -1390,7 +1155,7 @@ which should be validated. Using `be_valid` does not guarantee that the problem
 * What we can test about an uploader is whether the images are resized correctly.
 Here is a sample spec of a [carrierwave](https://github.com/jnicklas/carrierwave) image uploader:
 
-    ```Ruby
+    ```
 
     # rspec/uploaders/person_avatar_uploader_spec.rb
     require 'spec_helper'
